@@ -52,6 +52,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddSingleton<IOtpService, OtpService>();
+
+
 var app = builder.Build();
 app.UseCors("AllowAll");
 
