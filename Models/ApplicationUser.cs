@@ -13,12 +13,12 @@ namespace LoginAuthentication.Models
         public string ZipCode { get; set; }
 
         // Step 2: Professional Details fields
-        public string ServicesOffered { get; set; }
-        public string AboutMe { get; set; }
-        public bool AcceptedTermsAndPrivacy { get; set; }
+        public string? ServicesOffered { get; set; }
+        public string? AboutMe { get; set; }
+        public bool? AcceptedTermsAndPrivacy { get; set; }
 
         // Photo upload
-        public string PhotoPath { get; set; } // Stores the path to the uploaded photo
+        public string? PhotoPath { get; set; } // Stores the path to the uploaded photo
 
         // Note: IdentityUser already includes:
         // - UserName
