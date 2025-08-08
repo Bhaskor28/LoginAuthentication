@@ -196,5 +196,59 @@ namespace LoginAuthentication.Controllers
                 expiration = token.ValidTo
             });
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+                return BadRequest(new { message = "Email not found" });
+
+            var otp = _otpService.GenerateOtp(request.Email);
+            _emailService.SendEmail(request.Email, "Password Reset OTP", $"Your OTP is: {otp}");
+
+            return Ok(new { message = "OTP sent to email" });
+        }
+
+        [HttpPost("verify-reset-otp")]
+        public IActionResult VerifyResetOtp([FromBody] OtpVerify request)
+        {
+            var isValid = _otpService.VerifyOtp(request.Email, request.OtpCode);
+            if (!isValid)
+                return BadRequest(new { message = "Invalid or expired OTP" });
+
+            // Cache the OTP verification flag (email is verified)
+            _cache.Set($"reset_verified_{request.Email}", true, TimeSpan.FromMinutes(10));
+
+            return Ok(new { message = "OTP verified. Proceed to reset password." });
+        }
+
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (dto.NewPassword != dto.ConfirmPassword)
+                return BadRequest(new { message = "Passwords do not match" });
+
+            // Check if OTP was already verified
+            if (!_cache.TryGetValue($"reset_verified_{dto.Email}", out bool verified) || !verified)
+                return BadRequest(new { message = "OTP session expired" });
+
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null)
+                return BadRequest(new { message = "User not found" });
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            // Clear cache after successful reset
+            _cache.Remove($"reset_verified_{dto.Email}");
+
+            return Ok(new { message = "Password reset successfully" });
+        }
+
     }
 }
