@@ -28,10 +28,9 @@ namespace LoginAuthentication.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("AboutMe")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("AcceptedTermsAndPrivacy")
+                    b.Property<bool?>("AcceptedTermsAndPrivacy")
                         .HasColumnType("bit");
 
                     b.Property<int>("AccessFailedCount")
@@ -91,14 +90,12 @@ namespace LoginAuthentication.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("PhotoPath")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ServicesOffered")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("TwoFactorEnabled")
