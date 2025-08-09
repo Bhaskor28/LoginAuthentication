@@ -21,26 +21,40 @@ namespace LoginAuthentication.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
+        private readonly EmailService _emailService;
+        private readonly IOtpService _otpService;
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IWebHostEnvironment env,
             IMemoryCache cache,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            EmailService emailService,
+            IOtpService otpService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _env = env;
             _cache = cache;
             _configuration = configuration;
+            _emailService = emailService;
+            _otpService = otpService;
         }
 
 
 
-        [HttpPost("Step1BasicInfo")]
-        public IActionResult Step1BasicInfo([FromBody] BasicInfo dto)
+
+        [HttpPost("step1-basic-info")]
+        public async Task<IActionResult> Step1BasicInfo([FromBody] BasicInfo dto)
         {
+            // Check if email already exists
+            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (existingUser != null)
+            {
+                return BadRequest(new { message = "Email is already in use" });
+            }
+
             var tempId = Guid.NewGuid().ToString();
             _cache.Set(tempId, dto, TimeSpan.FromMinutes(15));
 
@@ -48,7 +62,7 @@ namespace LoginAuthentication.Controllers
         }
 
 
-        [HttpPost("Step2ProfessionalDetails")]
+        [HttpPost("step2-professional-details")]
         public async Task<IActionResult> Step2ProfessionalDetails(
             [FromForm] ProfessionalDetails dto,
             [FromForm] string tempId)
@@ -67,12 +81,12 @@ namespace LoginAuthentication.Controllers
                 Country = step1Dto.Country,
                 City = step1Dto.City,
                 ZipCode = step1Dto.ZipCode,
-                ServicesOffered = dto.ServicesOffered,
+                OfferedServiceList = dto.OfferedServeceList,
                 AboutMe = dto.AboutMe,
                 AcceptedTermsAndPrivacy = dto.AcceptedTermsAndPrivacy
             };
 
-            // Handle photo upload
+            // Handle photo
             if (dto.Photo != null && dto.Photo.Length > 0)
             {
                 var fileName = $"{Guid.NewGuid()}_{dto.Photo.FileName}";
@@ -90,26 +104,59 @@ namespace LoginAuthentication.Controllers
                 user.PhotoPath = $"/uploads/{fileName}";
             }
 
-            var result = await _userManager.CreateAsync(user, step1Dto.Password);
+            // Save user info and password to cache
+            _cache.Set($"pending_user_{user.Email}", new { user, step1Dto.Password }, TimeSpan.FromMinutes(10));
+
+            // Send OTP
+            var otp = _otpService.GenerateOtp(user.Email);
+            _emailService.SendEmail(user.Email, "Your OTP Code", $"Your OTP is: {otp}");   // Initially send OTP to email
+
+            return Ok(new { message = "OTP sent to email", email = user.Email });
+        }
+
+
+        [HttpPost("step3-send-otp")]     //used for only resend OTP when user not get OTP first time.
+        public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
+        {
+            var otp = _otpService.GenerateOtp(request.Email);
+            _emailService.SendEmail(request.Email, "Your OTP Code", $"Your OTP is: {otp}");
+            return Ok(new { message = "OTP sent" });
+        }
+
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] OtpVerify request)
+        {
+            var isValid = _otpService.VerifyOtp(request.Email, request.OtpCode);
+            if (!isValid)
+                return BadRequest(new { message = "Invalid or expired OTP" });
+
+            if (!_cache.TryGetValue($"pending_user_{request.Email}", out dynamic cached))
+                return NotFound("User info not found or expired");
+
+            ApplicationUser user = cached.user;
+            string password = cached.Password;
+
+            var result = await _userManager.CreateAsync(user, password);  //upload user informatin to AspNetUser table.
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
-            // Remove from temp cache
-            _cache.Remove(tempId);
+            // Clean up cache
+            _cache.Remove($"pending_user_{request.Email}");
 
-            var response = new CreateAccount
+            return Ok(new
             {
-                Id = user.Id,
-                UserName = user.UserName,
-                Email = user.Email,
-                FullName = user.FullName,
-                DateOfBirth = user.DateOfBirth,
-                ServicesOffered = user.ServicesOffered,
-                PhotoUrl = user.PhotoPath
-            };
-
-            return Ok(response);
+                message = "OTP verified and account created",
+                user = new
+                {
+                    user.Id,
+                    user.Email,
+                    user.UserName,
+                    user.FullName,
+                    user.PhotoPath
+                }
+            });
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] Login model)
@@ -149,5 +196,59 @@ namespace LoginAuthentication.Controllers
                 expiration = token.ValidTo
             });
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+                return BadRequest(new { message = "Email not found" });
+
+            var otp = _otpService.GenerateOtp(request.Email);
+            _emailService.SendEmail(request.Email, "Password Reset OTP", $"Your OTP is: {otp}");
+
+            return Ok(new { message = "OTP sent to email" });
+        }
+
+        [HttpPost("verify-reset-otp")]
+        public IActionResult VerifyResetOtp([FromBody] OtpVerify request)
+        {
+            var isValid = _otpService.VerifyOtp(request.Email, request.OtpCode);
+            if (!isValid)
+                return BadRequest(new { message = "Invalid or expired OTP" });
+
+            // Cache the OTP verification flag (email is verified)
+            _cache.Set($"reset_verified_{request.Email}", true, TimeSpan.FromMinutes(10));
+
+            return Ok(new { message = "OTP verified. Proceed to reset password." });
+        }
+
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (dto.NewPassword != dto.ConfirmPassword)
+                return BadRequest(new { message = "Passwords do not match" });
+
+            // Check if OTP was already verified
+            if (!_cache.TryGetValue($"reset_verified_{dto.Email}", out bool verified) || !verified)
+                return BadRequest(new { message = "OTP session expired" });
+
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null)
+                return BadRequest(new { message = "User not found" });
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            // Clear cache after successful reset
+            _cache.Remove($"reset_verified_{dto.Email}");
+
+            return Ok(new { message = "Password reset successfully" });
+        }
+
     }
 }

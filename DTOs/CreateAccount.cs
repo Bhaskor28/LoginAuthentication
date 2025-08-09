@@ -1,4 +1,6 @@
-﻿namespace LoginAuthentication.DTOs
+﻿using LoginAuthentication.Models;
+
+namespace LoginAuthentication.DTOs
 {
     public class CreateAccount
     {
@@ -8,6 +10,6 @@
         public string FullName { get; set; }
         public string PhotoUrl { get; set; }
         public DateTime DateOfBirth { get; set; }
-        public string ServicesOffered { get; set; }
+        //public ICollection<OfferedServeces> OfferedServeceList { get; set; }
     }
 }
