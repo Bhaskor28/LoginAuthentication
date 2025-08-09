@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using LoginAuthentication.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace LoginAuthentication.DTOs
 {
@@ -9,7 +10,7 @@ namespace LoginAuthentication.DTOs
 
         [Required]
         [Display(Name = "Your Services")]
-        public string ServicesOffered { get; set; }
+        public ICollection<OfferedServeces> OfferedServeceList { get; set; }
 
         [Required]
         [Display(Name = "About Me")]

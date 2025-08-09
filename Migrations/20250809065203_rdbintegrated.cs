@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LoginAuthentication.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class rdbintegrated : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -36,10 +36,16 @@ namespace LoginAuthentication.Migrations
                     Country = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     City = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ZipCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ServicesOffered = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    OfferedServiceId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     AboutMe = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     AcceptedTermsAndPrivacy = table.Column<bool>(type: "bit", nullable: true),
                     PhotoPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NationalIdOrPassportNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IdDocumentPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AdditionalNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumberId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    WhatsAppId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IdentityId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -166,6 +172,85 @@ namespace LoginAuthentication.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "IdentityDetails",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Coins = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IdentityDetails", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IdentityDetails_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OfferedServeces",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OfferedServeces", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OfferedServeces_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PhoneDetails",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Coins = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PhoneDetails", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PhoneDetails_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WhatsAppDetails",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Coins = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WhatsAppDetails", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WhatsAppDetails_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -204,6 +289,29 @@ namespace LoginAuthentication.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdentityDetails_UserId",
+                table: "IdentityDetails",
+                column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OfferedServeces_UserId",
+                table: "OfferedServeces",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PhoneDetails_UserId",
+                table: "PhoneDetails",
+                column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WhatsAppDetails_UserId",
+                table: "WhatsAppDetails",
+                column: "UserId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -223,6 +331,18 @@ namespace LoginAuthentication.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "IdentityDetails");
+
+            migrationBuilder.DropTable(
+                name: "OfferedServeces");
+
+            migrationBuilder.DropTable(
+                name: "PhoneDetails");
+
+            migrationBuilder.DropTable(
+                name: "WhatsAppDetails");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoginAuthentication.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250807152410_initial")]
-    partial class initial
+    [Migration("20250809065203_rdbintegrated")]
+    partial class rdbintegrated
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,6 +38,9 @@ namespace LoginAuthentication.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
+
+                    b.Property<string>("AdditionalNotes")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -69,11 +72,20 @@ namespace LoginAuthentication.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("IdDocumentPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdentityId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NationalIdOrPassportNumber")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -82,6 +94,10 @@ namespace LoginAuthentication.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("OfferedServiceId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
@@ -92,13 +108,13 @@ namespace LoginAuthentication.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("PhoneNumberId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PhotoPath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ServicesOffered")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("TwoFactorEnabled")
@@ -107,6 +123,9 @@ namespace LoginAuthentication.Migrations
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("WhatsAppId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ZipCode")
                         .IsRequired()
@@ -123,6 +142,95 @@ namespace LoginAuthentication.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.IdentityDetails", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Coins")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("IdentityDetails");
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.OfferedServeces", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("OfferedServeces");
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.PhoneDetails", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Coins")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("PhoneDetails");
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.WhatsAppDetails", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Coins")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("WhatsAppDetails");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -258,6 +366,50 @@ namespace LoginAuthentication.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("LoginAuthentication.Models.IdentityDetails", b =>
+                {
+                    b.HasOne("LoginAuthentication.Models.ApplicationUser", "User")
+                        .WithOne("IdentityDetails")
+                        .HasForeignKey("LoginAuthentication.Models.IdentityDetails", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.OfferedServeces", b =>
+                {
+                    b.HasOne("LoginAuthentication.Models.ApplicationUser", "User")
+                        .WithMany("OfferedServiceList")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.PhoneDetails", b =>
+                {
+                    b.HasOne("LoginAuthentication.Models.ApplicationUser", "User")
+                        .WithOne("PhoneDetails")
+                        .HasForeignKey("LoginAuthentication.Models.PhoneDetails", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.WhatsAppDetails", b =>
+                {
+                    b.HasOne("LoginAuthentication.Models.ApplicationUser", "User")
+                        .WithOne("WhatsAppDetails")
+                        .HasForeignKey("LoginAuthentication.Models.WhatsAppDetails", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -307,6 +459,17 @@ namespace LoginAuthentication.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LoginAuthentication.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("IdentityDetails");
+
+                    b.Navigation("OfferedServiceList");
+
+                    b.Navigation("PhoneDetails");
+
+                    b.Navigation("WhatsAppDetails");
                 });
 #pragma warning restore 612, 618
         }

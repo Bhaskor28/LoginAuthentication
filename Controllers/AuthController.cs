@@ -81,7 +81,7 @@ namespace LoginAuthentication.Controllers
                 Country = step1Dto.Country,
                 City = step1Dto.City,
                 ZipCode = step1Dto.ZipCode,
-                ServicesOffered = dto.ServicesOffered,
+                OfferedServiceList = dto.OfferedServeceList,
                 AboutMe = dto.AboutMe,
                 AcceptedTermsAndPrivacy = dto.AcceptedTermsAndPrivacy
             };
